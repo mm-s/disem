@@ -15,6 +15,8 @@ if [ "_$DISEM_PREFIX" = "_" ]; then
 	exit 1
 fi
 
+DISEM_LOCAL_PREFIX=~/.disem
+
 maintainer_email=$DISEM_MAINTAINER_EMAIL
 if [ "x$maintainer_email" = "x" ]; then
   maintainer_email="mm@mm-studios.com";
@@ -35,6 +37,9 @@ fi
 if [ "x$1" = "x" ]; then
   echo "usage: disem URL rev [templatename]"
   echo "available patching templates:"
+  if [ -d $DISEM_LOCAL_PREFIX/templates]; then
+	ls $DISEM_LOCAL_PREFIX/templates -1
+  fi
   ls $DISEM_PREFIX/templates -1
   echo ""
   echo "environment variables:"
@@ -57,8 +62,11 @@ if [ -n $template_name ]; then
 	template_name=default
 fi
 
-template_dir=$DISEM_PREFIX/templates/$template_name
-
+if [ -f $DISEM_LOCAL_PREFIX/templates/$template_name ]; then
+	template_dir=$DISEM_LOCAL_PREFIX/templates/$template_name
+else
+	template_dir=$DISEM_PREFIX/templates/$template_name
+fi
 
 if [ "x$rev" = "x" ]; then
   rev=HEAD
