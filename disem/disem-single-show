@@ -8,7 +8,7 @@ function usage {
   echo ""
   echo "get information with only the project.xml file (no dependencies calculation)"
   echo "usage:"
-  echo "  mmmake-single-show <path/to/project.xml> <command>"
+  echo "  disem-single-show <path/to/project.xml> <command>"
   echo "  where command is any of:"
   echo "  name    :show project name"
   echo "  title    :show project title"

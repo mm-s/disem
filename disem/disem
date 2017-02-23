@@ -86,7 +86,7 @@ dest0=`echo $url | sed "s/.*\\/\(.*\)/\1/"`
 
 svn export -r$rev $url out/$dest0
 
-dest=`$DIR/mmmake-single-show out/$dest0/project.xml name`
+dest=`$DIR/disem-single-show out/$dest0/project.xml name`
 
 mv out/$dest0 out/$dest
 
@@ -102,8 +102,8 @@ pkgname=`echo $dest | sed s#_#-#g`
 major="1"
 minor="0"
 if [ -f project.xml ]; then
-	major=`$DIR/mmmake-single-show project.xml version_major`
-	minor=`$DIR/mmmake-single-show project.xml version_minor`
+	major=`$DIR/disem-single-show project.xml version_major`
+	minor=`$DIR/disem-single-show project.xml version_minor`
 fi
 echo "prjname: $prjname"
 echo "pkgname: $pkgname"
@@ -133,8 +133,8 @@ else
 	   #write control file 
 	   filename=control
 		#source package 
-		targets=`$DIR/mmmake-single-show ../project.xml targets`
-		title=`$DIR/mmmake-single-show ../project.xml title`
+		targets=`$DIR/disem-single-show ../project.xml targets`
+		title=`$DIR/disem-single-show ../project.xml title`
 		echo "Source: $pkgname" > $filename
 		echo "Section: unknown" >> $filename
 		echo "Priority: extra" >> $filename
@@ -149,7 +149,7 @@ else
 #				if [ ${#pkgtarget} -lt 3 ]; then
 #					pkgtarget="${pkgtarget}-alt"
 #				fi
-				tgtfulldeps=`$DIR/mmmake-single-show ../project.xml deps $target`
+				tgtfulldeps=`$DIR/disem-single-show ../project.xml deps $target`
 				for tgtfulldep in $tgtfulldeps; do
 					depprj=`echo $tgtfulldep | sed "s#\(.*\)->\(.*\)#\1#"`
 					deptgt=`echo $tgtfulldep | sed "s#\(.*\)->\(.*\)#\2#"`
@@ -176,7 +176,7 @@ else
 		echo "" >> $filename
 		firsttarget=""
 		for target in $targets; do
-			format=`$DIR/mmmake-single-show ../project.xml target_format $target`
+			format=`$DIR/disem-single-show ../project.xml target_format $target`
 			pkgtarget=`echo $target | sed s#_#-#g`
 #			if [ ${#pkgtarget} -lt 3 ]; then
 #				pkgtarget="${pkgtarget}-alt"
@@ -191,7 +191,7 @@ else
 				echo "Package: lib${pkgtarget}" >> $filename
 				echo "Architecture: any" >> $filename
 				echo -n "Depends: \${shlibs:Depends}, \${misc:Depends}" >> $filename
-				tgtdeps=`$DIR/mmmake-single-show ../project.xml tdeps $target`
+				tgtdeps=`$DIR/disem-single-show ../project.xml tdeps $target`
 				for tgtdep in $tgtdeps; do
 					pkgtgtdep=`echo $tgtdep | sed s#_#-#g`
 					echo -n ", lib$pkgtgtdep" >> $filename
@@ -217,7 +217,7 @@ else
 					echo "Package: lib${pkgtarget}-java" >> $filename
 					echo "Architecture: all" >> $filename
 					echo -n "Depends: " >> $filename
-					tgtdeps=`$DIR/mmmake-single-show ../project.xml tdeps $target`
+					tgtdeps=`$DIR/disem-single-show ../project.xml tdeps $target`
 					for tgtdep in $tgtdeps; do
 						pkgtgtdep=`echo $tgtdep | sed s#_#-#g`
 						echo -n ", lib$pkgtgtdep-java" >> $filename
@@ -232,7 +232,7 @@ else
 					echo "Package: lib${pkgtarget}-php" >> $filename
 					echo "Architecture: all" >> $filename
 					echo -n "Depends: " >> $filename
-					tgtdeps=`$DIR/mmmake-single-show ../project.xml tdeps $target`
+					tgtdeps=`$DIR/disem-single-show ../project.xml tdeps $target`
 					for tgtdep in $tgtdeps; do
 						pkgtgtdep=`echo $tgtdep | sed s#_#-#g`
 						echo -n ", lib$pkgtgtdep-php" >> $filename
@@ -254,7 +254,7 @@ else
 					fi
 					echo "Architecture: any" >> $filename
 					echo -n "Depends: \${shlibs:Depends}, \${misc:Depends}" >> $filename
-					tgtdeps=`$DIR/mmmake-single-show ../project.xml tdeps $target`
+					tgtdeps=`$DIR/disem-single-show ../project.xml tdeps $target`
 					for tgtdep in $tgtdeps; do
 						pkgtgtdep=`echo $tgtdep | sed s#_#-#g`
 #						if [ ${#pkgtgtdep} -lt 3 ]; then
@@ -298,7 +298,7 @@ else
 		echo "build-stamp: configure-stamp" >> $filename
 		echo "	dh_testdir" >> $filename
 		for target in $targets; do
-			format=`$DIR/mmmake-single-show ../project.xml target_format $target`
+			format=`$DIR/disem-single-show ../project.xml target_format $target`
 			if [ "x${target:0:4}" = "xtest" ]; then
 				:
 				#echo "	cd builddir && make ${prjname}_test" >> $filename
@@ -330,13 +330,13 @@ else
 		#files to -test
 #
 #		for target in $targets; do
-#			format=`$DIR/mmmake-single-show ../project.xml target_format $target`
+#			format=`$DIR/disem-single-show ../project.xml target_format $target`
 #			if [ "x${target:0:4}" = "xtest" ]; then
 #				echo "	cp builddir/sandbox/${prjname}_test debian/${pkgname}-test/usr/bin" >> $filename
 #			fi
 #		done
 		for target in $targets; do
-			format=`$DIR/mmmake-single-show ../project.xml target_format $target`
+			format=`$DIR/disem-single-show ../project.xml target_format $target`
 			pkgtarget=`echo $target | sed s#_#-#g`
 #			if [ ${#pkgtarget} -lt 3 ]; then
 #				pkgtarget="${pkgtarget}-alt"
@@ -423,7 +423,7 @@ else
 			if [ "x$target" = "x$prjname" ]; then
 				ln -s $target.dirs dirs
 			fi
-			format=`$DIR/mmmake-single-show ../project.xml target_format $target`
+			format=`$DIR/disem-single-show ../project.xml target_format $target`
 			pkgtarget=`echo $target | sed s#_#-#g`
 #			if [ ${#pkgtarget} -lt 3 ]; then
 #				pkgtarget="${pkgtarget}-alt"
@@ -500,7 +500,7 @@ else
    fi
 fi
 
-targets=`$DIR/mmmake-single-show project.xml targets`
+targets=`$DIR/disem-single-show project.xml targets`
 for target in $targets; do
 	echo "patching version files in `pwd`/$target"
 	#patch files
@@ -595,9 +595,9 @@ for file in `find . -type f -name "*"`; do
 done
 
 echo "Preparing include directory for each library target.."
-targets=`$DIR/mmmake-single-show project.xml targets`
+targets=`$DIR/disem-single-show project.xml targets`
 for target in $targets; do
-	format=`$DIR/mmmake-single-show project.xml target_format $target`
+	format=`$DIR/disem-single-show project.xml target_format $target`
 	if [ "x$format" = "xshared library" ]; then
 		echo "Disabled using explicit include dir, calculating it"
 

@@ -56,6 +56,7 @@ install: build
 	mkdir -p $(CURDIR)/debian/disem/usr/bin
 #	cp builddir/sandbox/bmake $(CURDIR)/debian/bmake/usr/bin/
 	cp $(CURDIR)/debian/src/disem/disem/disem $(CURDIR)/debian/disem/usr/bin/
+	cp $(CURDIR)/debian/src/disem/disem/disem-single-show $(CURDIR)/debian/disem/usr/bin/
 	mkdir -p $(CURDIR)/debian/disem/usr/share
 	cp $(CURDIR)/debian/src/disem/share/disem $(CURDIR)/debian/disem/usr/share/ -R
 	
