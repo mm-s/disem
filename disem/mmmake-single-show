@@ -10,6 +10,7 @@ function usage {
   echo "usage:"
   echo "  mmmake-single-show <path/to/project.xml> <command>"
   echo "  where command is any of:"
+  echo "  name    :show project name"
   echo "  title    :show project title"
   echo "  deps <target>   :show first level dependencies"
   echo "  tdeps <target>   :show first level dependencies (only targets)"

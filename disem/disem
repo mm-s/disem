@@ -81,7 +81,9 @@ rev=`xsltproc out/xsl out/svninfo.xml`
 
 dest=`echo $url | sed "s/.*\\/\(.*\)/\1/"`
 
-branch=`echo $url | sed "s/.*\/svn\/\(.*\)\/.*/\1/"`
+dest=`$DIR/mmmake-single-show project.xml name`
+
+#branch=`echo $url | sed "s/.*\/svn\/\(.*\)\/.*/\1/"`
 
 svn export -r$rev $url out/$dest
 
@@ -96,7 +98,7 @@ pkgname=`echo $dest | sed s#_#-#g`
 
 major="1"
 minor="0"
-if [ -f projectr.xml ]; then
+if [ -f project.xml ]; then
 	major=`$DIR/mmmake-single-show project.xml version_major`
 	minor=`$DIR/mmmake-single-show project.xml version_minor`
 fi
