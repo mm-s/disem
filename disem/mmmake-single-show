@@ -124,6 +124,11 @@ if [ "x${command}" = "xtitle" ]; then
 	echo $desc
 	exit 0
 fi
+if [ "x${command}" = "xname" ]; then
+	desc=`xsltproc $xsltdir/name.xsl $prjxmlfile`
+	echo $desc
+	exit 0
+fi
 
 if [ "x${command}" = "xtarget_title" ]; then
 	tf_tgt=$3
