@@ -8,6 +8,6 @@ Homepage: mm-studios.com
 
 Package: disem
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, xsltproc
+Depends: ${shlibs:Depends}, ${misc:Depends}, xsltproc, subversion
 Description: Disemination of projects from svn development repository
  Project disemination from development repository. It patches source code with headers.
