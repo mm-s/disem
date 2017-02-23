@@ -37,7 +37,7 @@ fi
 if [ "x$1" = "x" ]; then
   echo "usage: disem URL rev [templatename]"
   echo "available patching templates:"
-  if [ -d $DISEM_LOCAL_PREFIX/templates]; then
+  if [ -d $DISEM_LOCAL_PREFIX/templates ]; then
 	ls $DISEM_LOCAL_PREFIX/templates -1
   fi
   ls $DISEM_PREFIX/templates -1
