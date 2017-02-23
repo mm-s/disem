@@ -1,0 +1,132 @@
+#!/bin/bash
+
+if [ "x$DISEM_PREFIX" = "x" ]; then
+if [ -d /usr/share/disem ]; then
+	DISEM_PREFIX=/usr/share/disem
+fi
+fi
+
+if [ "x$1" = "x" ]; then
+  echo "usage: disem-odt URL [rev]"
+  echo "stamp a odt document from a repository"
+  echo "tokens:"
+  echo "  <disem:svnrev>"
+  echo "  <disem:datestamp>"
+  echo "file name is replaced with the value of attribute: export_filename (must be specifies without extension"
+echo ""
+echo "send greeting cards to:"
+echo "  Marcos Mayorga - marcos.f.mayorgaaguirre@boeing.com"
+echo "  BR&TE' 2010"
+  exit
+fi
+
+
+url=$1
+rev=$2
+
+if [ "x$rev" = "x" ]; then
+  rev=HEAD
+fi
+rm out -rf
+mkdir out
+
+svn info --xml -r $rev $url > out/svninfo.xml
+xsl='<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"><xsl:output method="text"/><xsl:template match="*"><xsl:apply-templates/></xsl:template><xsl:template match="text()"/><xsl:template match="commit"><xsl:value-of select="@revision"/></xsl:template></xsl:stylesheet>'
+echo $xsl > out/xsl
+rev=`xsltproc out/xsl out/svninfo.xml`
+
+xsl='<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"><xsl:output method="text"/><xsl:template match="*"><xsl:apply-templates/></xsl:template><xsl:template match="text()"/><xsl:template match="date"><xsl:value-of select="."/></xsl:template></xsl:stylesheet>'
+echo $xsl > out/xsl
+datestamp=`xsltproc out/xsl out/svninfo.xml`
+datestamp=`echo $datestamp | sed "s#\(.*\)T\(.*\)#\1#"`
+datestamp=${datestamp:0:7}
+
+file=`echo $url | sed "s/.*\\/\(.*\)/\1/"`
+
+branch=`echo $url | sed "s/.*\/svn\/\(.*\)\/.*/\1/"`
+
+svn export -r$rev $url out/$file
+
+name=`echo $file | sed "s#\(.*\).odt#\1#"`
+
+major=2
+minor=0
+
+version=$major.$minor.$rev
+cd out
+
+unzip -oq $file -d work
+
+cd work
+
+xmllint --format styles.xml > styles_0.xml
+cat styles_0.xml | sed "s#\(.*\)&lt;disem:svnrev&gt;\(.*\)#\1r$version\2#g"> styles_1.xml
+rm styles_0.xml
+
+cat styles_1.xml | sed "s#\(.*\)&lt;disem:datestamp&gt;\(.*\)#\1$datestamp\2#g"> styles_2.xml
+rm styles_1.xml
+
+rm styles.xml
+cp styles_2.xml styles.xml
+rm styles_2.xml
+
+xmllint --format content.xml > content_0.xml
+cat content_0.xml | sed "s#\(.*\)&lt;disem:svnrev&gt;\(.*\)#\1r$version\2#g"> content_1.xml
+rm content_0.xml
+
+cat content_1.xml | sed "s#\(.*\)&lt;disem:datestamp&gt;\(.*\)#\1$datestamp\2#g"> content_2.xml
+rm content_1.xml
+
+rm content.xml
+cp content_2.xml content.xml
+rm content_2.xml
+
+
+xsl='<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0">
+<xsl:output method="text"/>
+
+<xsl:template match="*">
+<xsl:apply-templates/>
+</xsl:template>
+
+<xsl:template match="text()"/>
+<xsl:template match="meta:user-defined[@meta:name='
+xsl="$xsl'export_filename'"
+xsl=$xsl']"><xsl:value-of select="."/></xsl:template>
+
+</xsl:stylesheet>'
+echo $xsl > xsl
+outputfilename=`xsltproc xsl meta.xml`
+rm xsl
+
+rm ../$file
+zip -rq9 ../$file *
+cd ..
+
+rm work -rf
+
+cd ..
+
+rm out/svninfo.xml
+rm out/xsl
+
+if [ "x$outputfilename" = "x" ]; then
+  outputfilename=$name
+fi
+
+mv out/$file out/$outputfilename-$version.odt
+if [ -f $outputfilename-$version.pdf ]; then
+ echo "pdf already exists. Skipping"
+else
+ echo "converting to pdf"
+ unoconv -f pdf out/$outputfilename-$version.odt
+ mv out/$outputfilename-$version.pdf .
+fi
+exit
+rm out -rf
+echo "exported:"
+echo $outputfilename-$version.pdf
+
+
+
+

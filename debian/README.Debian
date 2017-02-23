@@ -1,0 +1,11 @@
+disem for Debian
+----------------
+
+instructions to build the debian package:
+
+use 'disem' to gather the latest version of the repository:
+
+disem http://lawoman/svn/trunk/disem HEAD 
+
+
+ -- marcos mayorga <marcos.f.mayorgaaguirre@boeing.com>  Mon, 03 Aug 2009 14:33:47 +0200

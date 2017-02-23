@@ -1,0 +1,18 @@
+Package: <DISEM:PRJNAME>-dev
+Section: libdevel
+Architecture: any
+Depends: <DISEM:PRJNAME><DISEM:MAJOR> (= ${binary:Version})
+Description: <DISEM:SHORTDESC> - dev
+<DISEM:LONGDESC>
+ .
+ development files
+
+Package: <DISEM:PRJNAME><DISEM:MAJOR>
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, <DISEM:DEPS>
+Description: <DISEM:SHORTDESC> - dev
+<DISEM:LONGDESC>
+ .
+ runtime files
+

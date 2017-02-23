@@ -1,0 +1,606 @@
+
+#!/bin/bash
+
+if [ "x$DISEM_PREFIX" = "x" ]; then
+if [ -d /usr/share/disem ]; then
+	DISEM_PREFIX=/usr/share/disem
+fi
+fi
+
+maintainer_email=$DISEM_MAINTAINER_EMAIL
+if [ "x$maintainer_email" = "x" ]; then
+  maintainer_email="mm@mm-studios.com";
+fi
+
+maintainer_name=$DISEM_MAINTAINER_NAME
+if [ "x$maintainer_name" = "x" ]; then
+  maintainer_name="Marcos Mayorga";
+fi
+
+maintainer_home=$DISEM_MAINTAINER_HOME
+if [ "x$maintainer_home" = "x" ]; then
+  maintainer_home="http://mm-studios.com";
+fi
+
+
+
+if [ "x$1" = "x" ]; then
+  echo "usage: disem URL rev [templatename]"
+  echo "available patching templates:"
+  ls $DISEM_PREFIX/templates -1
+  echo ""
+  echo "environment variables:"
+  echo "  DISEM_MAINTAINER_EMAIL: for debian packages"
+  echo "  DISEM_MAINTAINER_NAME: for debian packages"
+  echo "  DISEM_MAINTAINER_HOME: website .-for debian packages"
+echo ""
+echo "send greeting cards to:"
+echo "  $maintainer_name - $maintainer_email"
+echo "  BR&TE'2009 2010"
+  exit
+fi
+
+
+url=$1
+rev=$2
+template_name=$3
+
+if [ -n $template_name ]; then
+	template_name=default
+fi
+
+template_dir=$DISEM_PREFIX/templates/$template_name
+
+
+if [ "x$rev" = "x" ]; then
+  rev=HEAD
+fi
+rm out -rf
+mkdir out
+
+svn info --xml -r $rev $url > out/svninfo.xml
+xsl='<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"><xsl:output method="text"/><xsl:template match="*"><xsl:apply-templates/></xsl:template><xsl:template match="text()"/><xsl:template match="commit"><xsl:value-of select="@revision"/></xsl:template></xsl:stylesheet>'
+echo $xsl > out/xsl
+rev=`xsltproc out/xsl out/svninfo.xml`
+
+dest=`echo $url | sed "s/.*\\/\(.*\)/\1/"`
+
+branch=`echo $url | sed "s/.*\/svn\/\(.*\)\/.*/\1/"`
+
+svn export -r$rev $url out/$dest
+
+cd out/$dest
+
+prjname=$dest
+pkgname=`echo $dest | sed s#_#-#g`
+#if [ ${#pkgname} -lt 3 ]; then
+#	pkgname="${pkgname}-alt"
+#fi
+
+
+major="1"
+minor="0"
+major=`mmmake-single-show project.xml version_major`
+minor=`mmmake-single-show project.xml version_minor`
+echo "prjname: $prjname"
+echo "pkgname: $pkgname"
+echo "major: $major"
+echo "minor: $minor"
+echo "rev: $rev"
+
+
+if [ -d debian ]; then
+   datestamp=`date -R`
+   package=`cat debian/control | grep Source: | sed "s-.*: \(.*\)-\1-"`
+   echo "$package ($major.$minor.$rev) unstable; urgency=low" > debian/changelog
+   echo "" >> debian/changelog
+   echo "  * another release." >> debian/changelog
+   echo "" >> debian/changelog
+   echo " -- $maintainer_email <$maintainer_email>  $datestamp" >> debian/changelog
+   echo "" >> debian/changelog
+else
+	if [ -f project.xml ]; then
+	   debian_template_dir=$DISEM_PREFIX/debian
+	   here=`pwd`
+	   debiandir=debian
+	   mkdir $debiandir
+	   #control file
+	   cd $debiandir
+
+	   #write control file 
+	   filename=control
+		#source package 
+		targets=`mmmake-single-show ../project.xml targets`
+		title=`mmmake-single-show ../project.xml title`
+		echo "Source: $pkgname" > $filename
+		echo "Section: unknown" >> $filename
+		echo "Priority: extra" >> $filename
+		echo "Maintainer: $maintainer_name <$maintainer_email>" >> $filename
+		echo -n "Build-depends: debhelper (>= 7), mmmake" >> $filename
+		if [ -d ../java/$target ]; then
+			echo -n ",ant" >> $filename
+		fi
+		for target in $targets; do
+			if [ "x${target:0:4}" != "xtest" ]; then
+				pkgtarget=`echo $target | sed s#_#-#g`
+#				if [ ${#pkgtarget} -lt 3 ]; then
+#					pkgtarget="${pkgtarget}-alt"
+#				fi
+				tgtfulldeps=`mmmake-single-show ../project.xml deps $target`
+				for tgtfulldep in $tgtfulldeps; do
+					depprj=`echo $tgtfulldep | sed "s#\(.*\)->\(.*\)#\1#"`
+					deptgt=`echo $tgtfulldep | sed "s#\(.*\)->\(.*\)#\2#"`
+					if [ "x$depprj" != "x$prjname" ]; then
+						pkgtgtdep=`echo $deptgt | sed s#_#-#g`
+#						if [ ${#pkgtgtdep} -lt 3 ]; then
+#							pkgtgtdep="${pkgtgtdep}-alt"
+#						fi
+						echo -n ", lib$pkgtgtdep-dev" >> $filename
+						if [ -d ../java/$target ]; then
+						  echo -n ", lib$pkgtgtdep-java" >> $filename
+						fi
+						if [ -d ../php/$target ]; then
+						  echo -n ", lib$pkgtgtdep-php" >> $filename
+						fi
+					fi
+				done 
+			fi
+		done
+		echo "" >> $filename
+
+		echo "Standards-Version: 3.8.1" >> $filename
+		echo "Homepage: $maintainer_home" >> $filename
+		echo "" >> $filename
+		firsttarget=""
+		for target in $targets; do
+			format=`mmmake-single-show ../project.xml target_format $target`
+			pkgtarget=`echo $target | sed s#_#-#g`
+#			if [ ${#pkgtarget} -lt 3 ]; then
+#				pkgtarget="${pkgtarget}-alt"
+#			fi
+
+			if [ "x$firsttarget" = "x" ]; then
+				firsttarget=$target
+			fi
+
+			if [ "x$format" = "xshared library" ]; then
+				#runtime binary package 
+				echo "Package: lib${pkgtarget}" >> $filename
+				echo "Architecture: any" >> $filename
+				echo -n "Depends: \${shlibs:Depends}, \${misc:Depends}" >> $filename
+				tgtdeps=`mmmake-single-show ../project.xml tdeps $target`
+				for tgtdep in $tgtdeps; do
+					pkgtgtdep=`echo $tgtdep | sed s#_#-#g`
+					echo -n ", lib$pkgtgtdep" >> $filename
+				done 
+				echo "" >> $filename
+				echo "Description: $title" >> $filename
+				echo " $title" >> $filename
+				echo "" >> $filename
+				#development package 
+				echo "Package: lib${pkgtarget}-dev" >> $filename
+				echo "Architecture: any" >> $filename
+				echo -n "Depends: \${shlibs:Depends}, \${misc:Depends}, lib${pkgtarget}, mmmake" >> $filename
+				for tgtdep in $tgtdeps; do
+					pkgtgtdep=`echo $tgtdep | sed s#_#-#g`
+					echo -n ", lib$pkgtgtdep-dev" >> $filename
+				done 
+				echo "" >> $filename
+				echo "Description: $title - Development libraries" >> $filename
+				echo " $title - Development libraries" >> $filename
+				echo "" >> $filename
+				#java package 
+				if [ -d ../java/$target ]; then
+					echo "Package: lib${pkgtarget}-java" >> $filename
+					echo "Architecture: all" >> $filename
+					echo -n "Depends: " >> $filename
+					tgtdeps=`mmmake-single-show ../project.xml tdeps $target`
+					for tgtdep in $tgtdeps; do
+						pkgtgtdep=`echo $tgtdep | sed s#_#-#g`
+						echo -n ", lib$pkgtgtdep-java" >> $filename
+					done 
+					echo "" >> $filename
+					echo "Description: $title" >> $filename
+					echo " $title" >> $filename
+					echo "" >> $filename
+				fi
+				#php package 
+				if [ -d ../php/$target ]; then
+					echo "Package: lib${pkgtarget}-php" >> $filename
+					echo "Architecture: all" >> $filename
+					echo -n "Depends: " >> $filename
+					tgtdeps=`mmmake-single-show ../project.xml tdeps $target`
+					for tgtdep in $tgtdeps; do
+						pkgtgtdep=`echo $tgtdep | sed s#_#-#g`
+						echo -n ", lib$pkgtgtdep-php" >> $filename
+					done 
+					echo "" >> $filename
+					echo "Description: $title" >> $filename
+					echo " $title" >> $filename
+					echo "" >> $filename
+				fi
+			fi
+			if [ "x$format" = "xexecutable" ]; then
+				if [ "x${target:0:4}" != "xtest" ]; then
+					#unit tests package 
+					echo "" >> $filename
+					if [ "x$target" = "xtest" ]; then
+						echo "Package: ${pkgname}-test" >> $filename
+					else
+						echo "Package: ${pkgtarget}" >> $filename
+					fi
+					echo "Architecture: any" >> $filename
+					echo -n "Depends: \${shlibs:Depends}, \${misc:Depends}" >> $filename
+					tgtdeps=`mmmake-single-show ../project.xml tdeps $target`
+					for tgtdep in $tgtdeps; do
+						pkgtgtdep=`echo $tgtdep | sed s#_#-#g`
+#						if [ ${#pkgtgtdep} -lt 3 ]; then
+#							pkgtgtdep="${pkgtgtdep}-alt"
+#						fi
+						echo -n ", lib$pkgtgtdep" >> $filename
+					done 
+					echo "" >> $filename
+					if [ "x$target" = "xtest" ]; then
+						echo "Description: $title - Unit Tests" >> $filename
+						echo " $title - Unit Tests" >> $filename
+					else
+						echo "Description: $title - $target" >> $filename
+						echo " $title - $target" >> $filename
+					fi
+					echo "" >> $filename
+				fi
+			fi
+		done
+	   filename=changelog
+		echo "$pkgname ($major.$minor.$rev) unstable; urgency=low" > $filename
+		echo "" >> $filename
+		echo "  * disem release." >> $filename
+		echo "" >> $filename
+		echo " -- $maintainer_name <$maintainer_email>  Sun, 27 Nov 2009 13:58:36 +0100" >> $filename
+	   #write rules file 
+	   filename=compat
+		echo 9 > $filename
+	   filename=rules
+		echo "#!/usr/bin/make -f" > $filename
+		echo "configure: configure-stamp" >> $filename
+		echo "configure-stamp:" >> $filename
+		echo "	dh_testdir" >> $filename
+		echo "	mkdir -p builddir" >> $filename
+		echo "	mkdir src" >> $filename
+		echo "	cd src && ln -s .. $prjname" >> $filename
+		echo "	CMAKE_GENERATOR=\"Unix Makefiles\" cd builddir && BMAKE_EXCLUDE_TARGETS=\"\${BMAKE_EXCLUDE_TARGETS} test\" mmmake ../src $prjname release" >> $filename
+		echo "	touch configure-stamp" >> $filename
+
+		echo "build: build-stamp" >> $filename
+		echo "build-stamp: configure-stamp" >> $filename
+		echo "	dh_testdir" >> $filename
+		for target in $targets; do
+			format=`mmmake-single-show ../project.xml target_format $target`
+			if [ "x${target:0:4}" = "xtest" ]; then
+				:
+				#echo "	cd builddir && make ${prjname}_test" >> $filename
+			else
+				echo "	cd builddir && make $target -j\${MAKE_JOBS}" >> $filename
+			fi
+			if [ -d ../java/$target ]; then
+				echo "	cd java && ant $target" >> $filename
+			fi
+
+		done
+		echo "	touch \$@" >> $filename
+		echo "" >> $filename
+
+		echo "clean:" >> $filename
+		echo "	dh_testdir" >> $filename
+		echo "	dh_testroot" >> $filename
+		echo "	rm -f build-stamp configure-stamp" >> $filename
+		echo "	rm -rf src" >> $filename
+		echo "	rm -rf builddir" >> $filename
+		echo "	dh_clean" >> $filename
+		echo "" >> $filename
+
+		echo "install: build" >> $filename
+		echo "	dh_testdir" >> $filename
+		echo "	dh_testroot" >> $filename
+		echo "	dh_prep" >> $filename
+		echo "	dh_installdirs" >> $filename
+		#files to -test
+#
+#		for target in $targets; do
+#			format=`mmmake-single-show ../project.xml target_format $target`
+#			if [ "x${target:0:4}" = "xtest" ]; then
+#				echo "	cp builddir/sandbox/${prjname}_test debian/${pkgname}-test/usr/bin" >> $filename
+#			fi
+#		done
+		for target in $targets; do
+			format=`mmmake-single-show ../project.xml target_format $target`
+			pkgtarget=`echo $target | sed s#_#-#g`
+#			if [ ${#pkgtarget} -lt 3 ]; then
+#				pkgtarget="${pkgtarget}-alt"
+#			fi
+			if [ "x$format" = "xshared library" ]; then
+				if [ "x$target" = "x$firsttarget" ]; then
+					ln -s tmp lib$pkgtarget
+				fi
+				#files to -dev
+				echo "	cp debian/Find${pkgtarget}.cmake debian/lib${pkgtarget}-dev/usr/share/mmmake/cmakemodules/" >> $filename
+				echo "	cp debian/use_${pkgtarget}.cmake debian/lib${pkgtarget}-dev/usr/share/mmmake/templates/" >> $filename
+				echo "	cp debian/link_${pkgtarget}.cmake debian/lib${pkgtarget}-dev/usr/share/mmmake/templates/" >> $filename
+				echo "	cp ${target}/include/* debian/lib${pkgtarget}-dev/usr/include/${target} -R" >> $filename
+				#files to tmp
+				echo "	cp builddir/sandbox/lib${target}.so debian/lib${pkgtarget}/usr/lib" >> $filename
+				if [ -d ../java/$target ]; then
+					echo "	mkdir -p debian/lib${pkgtarget}-java/usr/share/java" >> $filename
+					echo "	cp java/${target}.jar debian/lib${pkgtarget}-java/usr/share/java/lib${pkgtarget}.jar" >> $filename
+				fi
+				if [ -d ../php/$target ]; then
+					echo "	mkdir -p debian/lib${pkgtarget}-php/usr/share/php/${pkgtarget}" >> $filename
+					echo "	cp php/${target}/*.inc debian/lib${pkgtarget}-php/usr/share/php/${pkgtarget}/ -R" >> $filename
+				fi
+				if [ -d ../share/${target} ]; then
+					echo "  touch share/${target}/_hook_"
+					echo "	cp share/${target}/* debian/lib${pkgtarget}/usr/share/${target}/ -R" >> $filename
+				fi
+			fi
+			if [ "x$format" = "xexecutable" ]; then
+				if [ "x${target:0:4}" != "xtest" ]; then
+					if [ "x$target" = "x$firsttarget" ]; then
+						ln -s tmp $pkgtarget
+					fi
+					#files to tmp
+					echo "	cp builddir/sandbox/${target} debian/${pkgtarget}/usr/bin" >> $filename
+					if [ -d ../share/${target} ]; then
+						echo "	cp share/${target}/* debian/${pkgtarget}/usr/share/${target}/ -R" >> $filename
+					fi
+				fi
+			fi
+		done
+		echo "" >> $filename
+
+		echo "binary-indep: install" >> $filename
+		echo "" >> $filename
+
+		echo "binary-arch: install" >> $filename
+		echo "	dh_testdir" >> $filename
+		echo "	dh_testroot" >> $filename
+		echo "	dh_installchangelogs" >> $filename
+		echo "	dh_installdocs" >> $filename
+		echo "	dh_installexamples" >> $filename
+		echo "#	dh_install" >> $filename
+		echo "#	dh_installmenu" >> $filename
+		echo "#	dh_installdebconf" >> $filename
+		echo "#	dh_installlogrotate" >> $filename
+		echo "#	dh_installemacsen" >> $filename
+		echo "#	dh_installpam" >> $filename
+		echo "#	dh_installmime" >> $filename
+		echo "#	dh_python" >> $filename
+		echo "#	dh_installinit" >> $filename
+		echo "#	dh_installcron" >> $filename
+		echo "#	dh_installinfo" >> $filename
+		echo "	dh_installman" >> $filename
+		echo "	dh_link" >> $filename
+		echo "	dh_strip" >> $filename
+		echo "	dh_compress" >> $filename
+		echo "	dh_fixperms" >> $filename
+		echo "#	dh_perl" >> $filename
+		echo "#	dh_makeshlibs" >> $filename
+		echo "	dh_installdeb" >> $filename
+		echo "	dh_shlibdeps" >> $filename
+		echo "	dh_gencontrol" >> $filename
+		echo "	dh_md5sums" >> $filename
+		echo "	dh_builddeb" >> $filename
+		echo "" >> $filename
+
+
+		echo "binary: binary-indep binary-arch" >> $filename
+		echo ".PHONY: build clean binary-indep binary-arch binary install configure" >> $filename
+		chmod +x $filename
+
+		for target in $targets; do
+			if [ "x$target" = "x$prjname" ]; then
+				ln -s $target.dirs dirs
+			fi
+			format=`mmmake-single-show ../project.xml target_format $target`
+			pkgtarget=`echo $target | sed s#_#-#g`
+#			if [ ${#pkgtarget} -lt 3 ]; then
+#				pkgtarget="${pkgtarget}-alt"
+#			fi
+			if [ "x$format" = "xshared library" ]; then
+				filename=Find${pkgtarget}.cmake
+					echo "IF (NOT ${pkgtarget}_FOUND)" >> $filename
+					echo "FIND_PATH(${pkgtarget}_INCLUDE_DIR ${target}/${target}.h" >> $filename
+					echo "  /usr/include" >> $filename
+					echo "  /usr/local/include" >> $filename
+					echo "  DOC \"Directory containing ${pkgtarget} headers\"" >> $filename
+					echo ")" >> $filename
+					echo "" >> $filename
+					echo "SET(LIBSEARCHPATHS " >> $filename
+					echo "	/usr/lib" >> $filename
+					echo "	/usr/local/lib" >> $filename
+					echo ") " >> $filename
+					echo "" >> $filename
+					echo "FIND_LIBRARY(${pkgtarget}_LIBRARY" >> $filename
+					echo "	NAMES" >> $filename
+					echo "		${target}" >> $filename
+					echo "	PATHS 	\${LIBSEARCHPATHS} " >> $filename
+					echo ") " >> $filename
+					echo "" >> $filename
+					echo "IF (${pkgtarget}_INCLUDE_DIR AND ${pkgtarget}_LIBRARY)" >> $filename
+					echo "	SET(${pkgtarget}_FOUND TRUE) " >> $filename
+					echo "ENDIF (${pkgtarget}_INCLUDE_DIR AND ${pkgtarget}_LIBRARY)" >> $filename
+					echo "" >> $filename
+					echo "IF (${pkgtarget}_FOUND)" >> $filename
+					echo "	IF (NOT ${pkgtarget}_FIND_QUIETLY) " >> $filename
+					echo "		MESSAGE(STATUS \"Found ${pkgtarget}: \${${pkgtarget}_LIBRARY}\") " >> $filename
+					echo "	ENDIF (NOT ${pkgtarget}_FIND_QUIETLY) " >> $filename
+					echo "ELSE (${pkgtarget}_FOUND)" >> $filename
+					echo "	 IF (${pkgtarget}_FIND_REQUIRED) " >> $filename
+					echo "		MESSAGE(FATAL_ERROR \"Could not find ${pkgtarget}\") " >> $filename
+					echo "	ENDIF (${pkgtarget}_FIND_REQUIRED) " >> $filename
+					echo "ENDIF (${pkgtarget}_FOUND)" >> $filename
+					echo "ENDIF (NOT ${pkgtarget}_FOUND)" >> $filename
+				filename=use_${pkgtarget}.cmake
+					echo "IF (NOT ${pkgtarget}_FOUND)" > $filename
+					echo "FIND_PACKAGE(${pkgtarget} REQUIRED)" >> $filename
+					echo "include_directories( \${${pkgtarget}_INCLUDE_DIR} )" >> $filename
+					echo "ENDIF( NOT ${pkgtarget}_FOUND )" >> $filename
+					echo "" >> $filename
+					echo "IF( NOT ${pkgtarget}_FOUND )" >> $filename
+					echo "MESSAGE( SEND_ERROR \"${pkgtarget} is mandatory\" )" >> $filename
+					echo "ENDIF( NOT ${pkgtarget}_FOUND )" >> $filename
+				filename=link_${pkgtarget}.cmake
+					echo "target_link_libraries(\${prjname} \${${pkgtarget}_LIBRARY})" > $filename
+				filename=lib${pkgtarget}.dirs
+					echo "usr/lib" > $filename
+					if [ -d ../share/$pkgtarget ]; then
+						echo "usr/share/$pkgtarget" >> $filename
+					fi
+				filename=lib${pkgtarget}-dev.dirs
+					echo "usr/include/$target" > $filename
+					echo "usr/lib" >> $filename
+					echo "usr/share/mmmake/cmakemodules" >> $filename
+					echo "usr/share/mmmake/templates" >> $filename
+			fi
+			if [ "x$format" = "xexecutable" ]; then
+				if [ "x${target:0:4}" = "xtest" ]; then
+					:
+#					filename=${pkgname}-test.dirs
+#					echo "usr/bin" > $filename
+				else
+					filename=${pkgtarget}.dirs
+					echo "usr/bin" > $filename
+				fi
+			fi
+		done
+			
+	  cd $here
+   fi
+fi
+
+targets=`mmmake-single-show project.xml targets`
+for target in $targets; do
+	echo "patching version files in `pwd`/$target"
+	#patch files
+	for file in `find $target -type f -name "disem.h"`; do
+		echo "   $file" 
+		echo "#ifndef _${target}_DISEM_" > $file
+		echo "#define _${target}_DISEM_" >> $file
+		echo "#include <string>" >> $file
+		echo "namespace $target {" >> $file
+		echo "namespace disem {" >> $file
+		echo "extern const int major;" >> $file
+		echo "extern const int minor;" >> $file
+		echo "extern const int rev;" >> $file
+		echo "extern const std::string version;" >> $file
+		echo "extern const std::string date;" >> $file
+		echo "}" >> $file
+		echo "}" >> $file
+		echo "#endif" >> $file
+
+
+
+		file="$(dirname "$file")/disem.cpp"
+		echo "   $file" 
+		echo "#include \"disem.h\"" > $file
+		echo "namespace $target {" >> $file
+		echo "namespace disem {" >> $file
+		echo "const int major=$major;" >> $file
+		echo "const int minor=$minor;" >> $file
+		echo "const int rev=$rev;" >> $file
+		echo "const std::string version=\"$major.$minor.$rev\";" >> $file
+		echo "const std::string date=\"`date`\";" >> $file
+		echo "}}" >> $file
+
+	done
+	echo "patching share files in `pwd`/$target"
+	#patch files
+	for file in `find $target -type f -name "share.cpp"`; do
+		echo "   $file" 
+		echo "#include \"share.h\"" > $file
+		echo "typedef $target::share c;" >> $file
+		echo "std::string c::input_prefix(\"/usr/share/${target}\");" >> $file
+	done
+done
+
+echo "patching files in `pwd`"
+#patch files
+for file in `find . -type f -name "*"`; do
+	ext=`echo $file | sed "s/.*\.\(.*\)/\1/"`
+	if [ "x$file" = "x$ext" ]; then
+	ext=""
+	fi
+	cd ../..
+	template_file=$template_dir/$ext
+	if [ ! -f $template_file ]; then
+		cd out/$dest
+		continue
+	fi
+	mv out/$dest/$file out/$dest/${file}_disem34214523
+	cp $template_file out/tmp
+	# replace tokens
+	
+	filend=`echo $file | sed "s/\.\/\(.*\)/\1/"`
+	fileurl=$url/$filend
+	
+	svn info --xml -r $rev $fileurl > out/svninfo.xml
+	
+	xsl="<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\"><xsl:output method=\"text\"/><xsl:template match=\"text()\"/><xsl:template match=\"author\"><xsl:value-of select=\".\"/></xsl:template></xsl:stylesheet>"
+	echo $xsl > out/xsl
+	author=`xsltproc out/xsl out/svninfo.xml`
+	cat out/tmp | sed "s/\[disem\:AUTHOR\]/$author/" > out/tmp2; cp out/tmp2 out/tmp
+	
+	xsl="<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\"><xsl:output method=\"text\"/><xsl:template match=\"text()\"/><xsl:template match=\"date\"><xsl:value-of select=\".\"/></xsl:template></xsl:stylesheet>"
+	echo $xsl > out/xsl
+	revdate=`xsltproc out/xsl out/svninfo.xml`
+	cat out/tmp | sed "s/\[disem\:REVDATE\]/$revdate/" > out/tmp2; cp out/tmp2 out/tmp
+	
+	xsl="<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\"><xsl:output method=\"text\"/><xsl:template match=\"text()\"/><xsl:template match=\"commit\"><xsl:value-of select=\"@revision\"/></xsl:template></xsl:stylesheet>"
+	echo $xsl > out/xsl
+	revnumber=`xsltproc out/xsl out/svninfo.xml`
+	cat out/tmp | sed "s/\[disem\:REV\]/$revnumber/" > out/tmp2; cp out/tmp2 out/tmp
+	
+	
+	#
+	
+	mv out/tmp out/$dest/$file
+	cat out/$dest/${file}_disem34214523 >> out/$dest/$file
+	rm out/$dest/${file}_disem34214523
+	
+	echo "patched file: $file"
+	
+	cd out/$dest
+done
+
+echo "Preparing include directory for each library target.."
+targets=`mmmake-single-show project.xml targets`
+for target in $targets; do
+	format=`mmmake-single-show project.xml target_format $target`
+	if [ "x$format" = "xshared library" ]; then
+		echo "Disabled using explicit include dir, calculating it"
+
+#		if [ -d $target/include ]; then
+#			echo "found explicit include dir"
+#		else
+			echo "explicit include dir not found for $target: building it"
+			filelist=`find $target -name "*.h" -o -name "*.hpp" -o -name "*.inl" | sed "s#$target##"`
+			for file in $filelist; do
+				filedir=`echo $file | sed "s#\(.*\)/.*#\1#"`
+				mkdir -p $target/include/$filedir
+				cp $target/$file $target/include/$filedir
+			done
+#		fi
+	fi
+done 
+
+cd ../..
+
+rm out/svninfo.xml
+rm out/xsl
+
+mv out/$dest out/$pkgname-$major.$minor.$rev-src
+echo "exported in:"
+echo out/$pkgname-$major.$minor.$rev-src
+cd out
+tar -czf $pkgname-$major.$minor.$rev-src.tgz $pkgname-$major.$minor.$rev-src
+
+

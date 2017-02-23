@@ -1,0 +1,8 @@
+Source: <DISEM:PRJNAME>
+Priority: extra
+Maintainer: Marcos Mayorga Aguirre <marcos.f.mayorgaaguirre@boeing.com>
+Build-Depends: debhelper (>= 7), cmake
+Standards-Version: 3.8.1
+Section: libs
+Homepage: http://www.boeing.com
+

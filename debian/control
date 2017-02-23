@@ -1,0 +1,13 @@
+Source: disem
+Section: unknown
+Priority: extra
+Maintainer: Marcos Mayorga <mm@mm-studios.com>
+Build-Depends: debhelper (>= 7)
+Standards-Version: 3.8.1
+Homepage: mm-studios.com
+
+Package: disem
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, mmmake
+Description: Disemination of projects from svn development repository
+ Project disemination drom svn development repository. It patches source code with legal header.
