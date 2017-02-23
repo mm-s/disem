@@ -8,6 +8,6 @@ Homepage: mm-studios.com
 
 Package: disem
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, mmmake
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Disemination of projects from svn development repository
- Project disemination drom svn development repository. It patches source code with legal header.
+ Project disemination from development repository. It patches source code with headers.
