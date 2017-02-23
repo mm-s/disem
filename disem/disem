@@ -5,7 +5,14 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 if [ "x$DISEM_PREFIX" = "x" ]; then
 if [ -d /usr/share/disem ]; then
 	DISEM_PREFIX=/usr/share/disem
+elif [ -f $DIR/../share/disem/xsl/targets_shared_libraries.xsl ]; then
+	DISEM_PREFIX=$DIR/../share/disem
 fi
+fi
+
+if [ "_$DISEM_PREFIX" = "_" ]; then
+	echo "cannot find resource directory, set DISEM_PREFIX"
+	exit 1
 fi
 
 maintainer_email=$DISEM_MAINTAINER_EMAIL
@@ -34,10 +41,10 @@ if [ "x$1" = "x" ]; then
   echo "  DISEM_MAINTAINER_EMAIL: for debian packages"
   echo "  DISEM_MAINTAINER_NAME: for debian packages"
   echo "  DISEM_MAINTAINER_HOME: website .-for debian packages"
-echo ""
-echo "send greeting cards to:"
-echo "  $maintainer_name - $maintainer_email"
-echo "  BR&TE'2009 2010"
+  echo ""
+  echo "send greeting cards to:"
+  echo "  $maintainer_name - $maintainer_email"
+  echo "  2009 2010 2017"
   exit
 fi
 
