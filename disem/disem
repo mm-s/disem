@@ -62,7 +62,7 @@ if [ -n $template_name ]; then
 	template_name=default
 fi
 
-if [ -f $DISEM_LOCAL_PREFIX/templates/$template_name ]; then
+if [ -d $DISEM_LOCAL_PREFIX/templates/$template_name ]; then
 	template_dir=$DISEM_LOCAL_PREFIX/templates/$template_name
 else
 	template_dir=$DISEM_PREFIX/templates/$template_name
