@@ -291,7 +291,7 @@ else
 		echo "	mkdir -p builddir" >> $filename
 		echo "	mkdir src" >> $filename
 		echo "	cd src && ln -s .. $prjname" >> $filename
-		echo "	CMAKE_GENERATOR=\"Unix Makefiles\" cd builddir && BMAKE_EXCLUDE_TARGETS=\"\${BMAKE_EXCLUDE_TARGETS} test\" mmmake ../src $prjname release" >> $filename
+		echo "	CMAKE_GENERATOR=\"Unix Makefiles\" cd builddir && MMMAKE_EXCLUDE_TARGETS=\"\${MMMAKE_EXCLUDE_TARGETS} test\" mmmake ../src $prjname release" >> $filename
 		echo "	touch configure-stamp" >> $filename
 
 		echo "build: build-stamp" >> $filename
