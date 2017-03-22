@@ -58,6 +58,12 @@ url=$1
 rev=$2
 template_name=$3
 
+isgit=0
+if [[ $url == *".git" ]]; then
+  isgit=1
+fi
+
+
 if [ -n $template_name ]; then
 	template_name=default
 fi
@@ -69,26 +75,43 @@ else
 fi
 
 if [ "x$rev" = "x" ]; then
-  rev=HEAD
+  if [ $isgit -eq 1 ]; then
+    rev=""
+  else
+    rev="HEAD"
+  fi
 fi
 rm out -rf
 mkdir out
 
-svn info --xml -r $rev $url > out/svninfo.xml
-xsl='<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"><xsl:output method="text"/><xsl:template match="*"><xsl:apply-templates/></xsl:template><xsl:template match="text()"/><xsl:template match="commit"><xsl:value-of select="@revision"/></xsl:template></xsl:stylesheet>'
-echo $xsl > out/xsl
-rev=`xsltproc out/xsl out/svninfo.xml`
-
-dest0=`echo $url | sed "s/.*\\/\(.*\)/\1/"`
-
+if [ $isgit -eq 1 ]; then
+#  git clone -b master --single-branch $url out/src
+  git clone $url out/src
+  cd out/src
+  rev=`git --no-pager log --oneline --all --graph --decorate  $(git reflog | awk '{print $1}') | wc -l`
+#  rev=`git --no-pager log --pretty="%h" | wc -l`
+#  exit
+#  rm .git -r
+  cd ../..
+else
+  svn info --xml -r $rev $url > out/svninfo.xml
+  xsl='<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"><xsl:output method="text"/><xsl:template match="*"><xsl:apply-templates/></xsl:template><xsl:template match="text()"/><xsl:template match="commit"><xsl:value-of select="@revision"/></xsl:template></xsl:stylesheet>'
+  echo $xsl > out/xsl
+  rev=`xsltproc out/xsl out/svninfo.xml`
+fi
 
 #branch=`echo $url | sed "s/.*\/svn\/\(.*\)\/.*/\1/"`
 
-svn export -r$rev $url out/$dest0
-
-dest=`$DIR/disem-single-show out/$dest0/project.xml name`
-
-mv out/$dest0 out/$dest
+dest=""
+if [ $isgit -eq 1 ]; then
+        dest=`$DIR/disem-single-show out/src/project.xml name`
+        mv out/src out/$dest
+else 
+        dest0=`echo $url | sed "s/.*\\/\(.*\)/\1/"`
+	svn export -r$rev $url out/$dest0
+        dest=`$DIR/disem-single-show out/$dest0/project.xml name`
+        mv out/$dest0 out/$dest
+fi
 
 cd out/$dest
 
@@ -547,10 +570,10 @@ done
 
 echo "patching files in `pwd`"
 #patch files
-for file in `find . -type f -name "*"`; do
+for file in `find . -type f -name "*" | grep -v "\.git/"`; do
 	ext=`echo $file | sed "s/.*\.\(.*\)/\1/"`
 	if [ "x$file" = "x$ext" ]; then
-	ext=""
+	  ext=""
 	fi
 	cd ../..
 	template_file=$template_dir/$ext
@@ -558,31 +581,34 @@ for file in `find . -type f -name "*"`; do
 		cd out/$dest
 		continue
 	fi
+	if [ $isgit -eq 1 ]; then
+		cd out/$dest
+		author=`git log --pretty="%an %ae - %cn %ce" -1 -- $file`
+		revdate=`git log --pretty="%cd" -1 -- $file`
+		revnumber=`git log --pretty="%cd" -- $file | wc -l`
+		cd ../..
+	else
+		filend=`echo $file | sed "s/\.\/\(.*\)/\1/"`
+		fileurl=$url/$filend
+
+		svn info --xml -r $rev $fileurl > out/svninfo.xml
+		xsl="<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\"><xsl:output method=\"text\"/><xsl:template match=\"text()\"/><xsl:template match=\"author\"><xsl:value-of select=\".\"/></xsl:template></xsl:stylesheet>"
+		echo $xsl > out/xsl
+		author=`xsltproc out/xsl out/svninfo.xml`
+		xsl="<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\"><xsl:output method=\"text\"/><xsl:template match=\"text()\"/><xsl:template match=\"date\"><xsl:value-of select=\".\"/></xsl:template></xsl:stylesheet>"
+		echo $xsl > out/xsl
+		revdate=`xsltproc out/xsl out/svninfo.xml`
+		xsl="<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\"><xsl:output method=\"text\"/><xsl:template match=\"text()\"/><xsl:template match=\"commit\"><xsl:value-of select=\"@revision\"/></xsl:template></xsl:stylesheet>"
+		echo $xsl > out/xsl
+		revnumber=`xsltproc out/xsl out/svninfo.xml`
+	fi
+	# replace tokens
 	mv out/$dest/$file out/$dest/${file}_disem34214523
 	cp $template_file out/tmp
-	# replace tokens
-	
-	filend=`echo $file | sed "s/\.\/\(.*\)/\1/"`
-	fileurl=$url/$filend
-	
-	svn info --xml -r $rev $fileurl > out/svninfo.xml
-	
-	xsl="<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\"><xsl:output method=\"text\"/><xsl:template match=\"text()\"/><xsl:template match=\"author\"><xsl:value-of select=\".\"/></xsl:template></xsl:stylesheet>"
-	echo $xsl > out/xsl
-	author=`xsltproc out/xsl out/svninfo.xml`
+
 	cat out/tmp | sed "s/\[disem\:AUTHOR\]/$author/" > out/tmp2; cp out/tmp2 out/tmp
-	
-	xsl="<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\"><xsl:output method=\"text\"/><xsl:template match=\"text()\"/><xsl:template match=\"date\"><xsl:value-of select=\".\"/></xsl:template></xsl:stylesheet>"
-	echo $xsl > out/xsl
-	revdate=`xsltproc out/xsl out/svninfo.xml`
 	cat out/tmp | sed "s/\[disem\:REVDATE\]/$revdate/" > out/tmp2; cp out/tmp2 out/tmp
-	
-	xsl="<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\"><xsl:output method=\"text\"/><xsl:template match=\"text()\"/><xsl:template match=\"commit\"><xsl:value-of select=\"@revision\"/></xsl:template></xsl:stylesheet>"
-	echo $xsl > out/xsl
-	revnumber=`xsltproc out/xsl out/svninfo.xml`
 	cat out/tmp | sed "s/\[disem\:REV\]/$revnumber/" > out/tmp2; cp out/tmp2 out/tmp
-	
-	
 	#
 	
 	mv out/tmp out/$dest/$file
@@ -617,8 +643,14 @@ done
 
 cd ../..
 
-rm out/svninfo.xml
-rm out/xsl
+
+if [ $isgit -eq 1 ]; then
+	rm -r out/$dest/.git
+else
+	rm out/svninfo.xml
+	rm out/xsl
+fi
+
 
 mv out/$dest out/$pkgname-$major.$minor.$rev-src
 echo "exported in:"
