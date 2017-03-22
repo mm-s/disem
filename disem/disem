@@ -54,13 +54,18 @@ if [ "x$1" = "x" ]; then
 fi
 
 
-url=$1
+url0=$1
+url=""
 rev=$2
 template_name=$3
 
 isgit=0
-if [[ $url == *".git" ]]; then
+if [[ $url0 == *".git"* ]]; then
+  url=`echo $url0 | sed "s#\(.*\.git\)/*\(.*\)#\1#"`
+  prj=`echo $url0 | sed "s#\(.*\.git\)/*\(.*\)#\2#"`
   isgit=1
+else
+  url=$url0
 fi
 
 
@@ -84,15 +89,17 @@ fi
 rm out -rf
 mkdir out
 
+lpwd=`pwd`
+
 if [ $isgit -eq 1 ]; then
 #  git clone -b master --single-branch $url out/src
   git clone $url out/src
   cd out/src
-  rev=`git --no-pager log --oneline --all --graph --decorate  $(git reflog | awk '{print $1}') | wc -l`
+  rev=`git --no-pager log --oneline --all --decorate  $(git reflog | awk '{print $1}') -- $prj | wc -l`
 #  rev=`git --no-pager log --pretty="%h" | wc -l`
 #  exit
 #  rm .git -r
-  cd ../..
+  cd $lpwd
 else
   svn info --xml -r $rev $url > out/svninfo.xml
   xsl='<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"><xsl:output method="text"/><xsl:template match="*"><xsl:apply-templates/></xsl:template><xsl:template match="text()"/><xsl:template match="commit"><xsl:value-of select="@revision"/></xsl:template></xsl:stylesheet>'
@@ -103,23 +110,30 @@ fi
 #branch=`echo $url | sed "s/.*\/svn\/\(.*\)\/.*/\1/"`
 
 dest=""
+prjname=""
+pkgname=""
 if [ $isgit -eq 1 ]; then
-        dest=`$DIR/disem-single-show out/src/project.xml name`
-        mv out/src out/$dest
-else 
+	if [ "_$prj" != "_" ]; then
+		dest="src/$prj"
+		prjname=$prj
+		pkgname=`echo $prj | sed s#_#-#g`
+	else
+	        dest=`$DIR/disem-single-show out/src/project.xml name`
+        	mv out/src out/$dest
+		prjname=$dest
+		pkgname=`echo $dest | sed s#_#-#g`
+	fi
+else
         dest0=`echo $url | sed "s/.*\\/\(.*\)/\1/"`
 	svn export -r$rev $url out/$dest0
         dest=`$DIR/disem-single-show out/$dest0/project.xml name`
         mv out/$dest0 out/$dest
+	prjname=$dest
+	pkgname=`echo $dest | sed s#_#-#g`
 fi
 
 cd out/$dest
 
-prjname=$dest
-pkgname=`echo $dest | sed s#_#-#g`
-#if [ ${#pkgname} -lt 3 ]; then
-#	pkgname="${pkgname}-alt"
-#fi
 
 
 major="1"
@@ -133,7 +147,6 @@ echo "pkgname: $pkgname"
 echo "major: $major"
 echo "minor: $minor"
 echo "rev: $rev"
-
 
 if [ -d debian ]; then
    datestamp=`date -R`
@@ -575,7 +588,7 @@ for file in `find . -type f -name "*" | grep -v "\.git/"`; do
 	if [ "x$file" = "x$ext" ]; then
 	  ext=""
 	fi
-	cd ../..
+	cd $lpwd
 	template_file=$template_dir/$ext
 	if [ ! -f $template_file ]; then
 		cd out/$dest
@@ -586,7 +599,7 @@ for file in `find . -type f -name "*" | grep -v "\.git/"`; do
 		author=`git log --pretty="%an %ae - %cn %ce" -1 -- $file`
 		revdate=`git log --pretty="%cd" -1 -- $file`
 		revnumber=`git log --pretty="%cd" -- $file | wc -l`
-		cd ../..
+		cd $lpwd
 	else
 		filend=`echo $file | sed "s/\.\/\(.*\)/\1/"`
 		fileurl=$url/$filend
@@ -641,7 +654,7 @@ for target in $targets; do
 	fi
 done 
 
-cd ../..
+cd $lpwd
 
 
 if [ $isgit -eq 1 ]; then
