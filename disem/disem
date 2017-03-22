@@ -134,6 +134,10 @@ fi
 
 cd out/$dest
 
+if [ -x bin/disem_hook ]; then
+	echo "executing disem hook (verb checkout)"
+	bin/disem_hook checkout
+fi
 
 
 major="1"
@@ -325,9 +329,9 @@ else
 		echo "configure-stamp:" >> $filename
 		echo "	dh_testdir" >> $filename
 		echo "	mkdir -p builddir" >> $filename
-		echo "	mkdir src" >> $filename
-		echo "	cd src && ln -s .. $prjname" >> $filename
-		echo "	CMAKE_GENERATOR=\"Unix Makefiles\" cd builddir && MMMAKE_EXCLUDE_TARGETS=\"\${MMMAKE_EXCLUDE_TARGETS} test\" mmmake ../src $prjname release" >> $filename
+		echo "	mkdir t200src" >> $filename
+		echo "	cd t200src && ln -s .. $prjname" >> $filename
+		echo "	CMAKE_GENERATOR=\"Unix Makefiles\" cd builddir && MMMAKE_EXCLUDE_TARGETS=\"\${MMMAKE_EXCLUDE_TARGETS} test\" mmmake ../t200src $prjname release" >> $filename
 		echo "	touch configure-stamp" >> $filename
 
 		echo "build: build-stamp" >> $filename
@@ -353,7 +357,7 @@ else
 		echo "	dh_testdir" >> $filename
 		echo "	dh_testroot" >> $filename
 		echo "	rm -f build-stamp configure-stamp" >> $filename
-		echo "	rm -rf src" >> $filename
+		echo "	rm -rf t200src" >> $filename
 		echo "	rm -rf builddir" >> $filename
 		echo "	dh_clean" >> $filename
 		echo "" >> $filename
@@ -658,17 +662,21 @@ cd $lpwd
 
 
 if [ $isgit -eq 1 ]; then
-	rm -r out/$dest/.git
+	if [ -d out/src ]; then
+		rm -r out/src/.git
+	else
+		rm -r out/$dest/.git
+	fi
 else
 	rm out/svninfo.xml
 	rm out/xsl
 fi
 
 
-mv out/$dest out/$pkgname-$major.$minor.$rev-src
+mv out/$dest out/$pkgname-$major.$minor.$rev
 echo "exported in:"
-echo out/$pkgname-$major.$minor.$rev-src
+echo out/$pkgname-$major.$minor.$rev
 cd out
-tar -czf $pkgname-$major.$minor.$rev-src.tgz $pkgname-$major.$minor.$rev-src
+tar -czf $pkgname-$major.$minor.$rev.tgz $pkgname-$major.$minor.$rev
 
 
