@@ -652,12 +652,18 @@ for target in $targets; do
 #			echo "found explicit include dir"
 #		else
 			echo "explicit include dir not found for $target: building it"
-			filelist=`find $target -name "*.h" -o -name "*.hpp" -o -name "*.inl" | sed "s#$target##"`
+			filelist=`find $target -name "*.h" -o -name "*.hpp" -o -name "*.inl" | sed "s#^$target##"`
 			for file in $filelist; do
 				filedir=`echo $file | sed "s#\(.*\)/.*#\1#"`
 				mkdir -p $target/include/$filedir
 				cp $target/$file $target/include/$filedir
 			done
+			filelist=`find $target -type l -xtype d | sed "s#^$target##"`
+			for file in $filelist; do
+				cp $target/$file $target/include/$filedir
+			done
+
+
 #		fi
 	fi
 done 
