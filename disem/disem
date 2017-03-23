@@ -541,11 +541,12 @@ for target in $targets; do
 	echo "patching version files in `pwd`/$target"
 	#patch files
 	for file in `find $target -type f -name "disem.h"`; do
+		nhtarget=`echo $target | tr '-' '_'`
 		echo "   $file" 
-		echo "#ifndef _${target}_DISEM_" > $file
-		echo "#define _${target}_DISEM_" >> $file
+		echo "#ifndef _${nhtarget}_DISEM_" > $file
+		echo "#define _${nhtarget}_DISEM_" >> $file
 		echo "#include <string>" >> $file
-		echo "namespace $target {" >> $file
+		echo "namespace $nhtarget {" >> $file
 		echo "namespace disem {" >> $file
 		echo "extern const int major;" >> $file
 		echo "extern const int minor;" >> $file
@@ -561,7 +562,7 @@ for target in $targets; do
 		file="$(dirname "$file")/disem.cpp"
 		echo "   $file" 
 		echo "#include \"disem.h\"" > $file
-		echo "namespace $target {" >> $file
+		echo "namespace $nhtarget {" >> $file
 		echo "namespace disem {" >> $file
 		echo "const int major=$major;" >> $file
 		echo "const int minor=$minor;" >> $file
