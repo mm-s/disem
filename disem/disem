@@ -134,9 +134,9 @@ fi
 
 cd out/$dest
 
-if [ -x bin/disem_hook ]; then
+if [ -x disem/hook ]; then
 	echo "executing disem hook (verb checkout)"
-	bin/disem_hook checkout
+	disem/hook checkout
 fi
 
 
@@ -587,7 +587,13 @@ done
 
 echo "patching files in `pwd`"
 #patch files
-for file in `find . -type f -name "*" | grep -v "\.git/"`; do
+if [ -d disem/files ]; then
+	files=`find -L disem/files -type f -name "*"`
+else
+	files=`find . -type f -name "*" | grep -v "\.git/"`
+fi
+
+for file in $files; do
 	ext=`echo $file | sed "s/.*\.\(.*\)/\1/"`
 	if [ "x$file" = "x$ext" ]; then
 	  ext=""
