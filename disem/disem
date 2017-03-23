@@ -585,11 +585,13 @@ for target in $targets; do
 	done
 done
 
-echo "patching files in `pwd`"
 #patch files
-if [ -d disem/files ]; then
-	files=`find -L disem/files -type f -name "*"`
+ls -la disem
+if [ -d disem/patch ]; then
+	echo "patching files in `pwd`/disem/patch"
+	files=`find -L disem/patch -type f -name "*"`
 else
+	echo "patching files in `pwd`"
 	files=`find . -type f -name "*" | grep -v "\.git/"`
 fi
 
