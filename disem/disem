@@ -660,7 +660,8 @@ for target in $targets; do
 			done
 			filelist=`find $target -type l -xtype d | sed "s#^$target##"`
 			for file in $filelist; do
-				cp $target/$file $target/include/$filedir
+				filedir=`echo $file | sed "s#\(.*\)/.*#\1#"`
+				cp -d $target/$file $target/include/$filedir
 			done
 
 
