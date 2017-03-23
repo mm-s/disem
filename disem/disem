@@ -505,13 +505,13 @@ else
 				filename=use_${pkgtarget}.cmake
 					echo "IF (NOT ${pkgtarget}_FOUND)" > $filename
 					echo "FIND_PACKAGE(${pkgtarget} REQUIRED)" >> $filename
-					echo "include_directories( \${${pkgtarget}_INCLUDE_DIR} )" >> $filename
 					echo "ENDIF( NOT ${pkgtarget}_FOUND )" >> $filename
 					echo "" >> $filename
 					echo "IF( NOT ${pkgtarget}_FOUND )" >> $filename
 					echo "MESSAGE( SEND_ERROR \"${pkgtarget} is mandatory\" )" >> $filename
 					echo "ENDIF( NOT ${pkgtarget}_FOUND )" >> $filename
 				filename=link_${pkgtarget}.cmake
+					echo "include_directories( \${${pkgtarget}_INCLUDE_DIR} )" >> $filename
 					echo "target_link_libraries(\${prjname} \${${pkgtarget}_LIBRARY})" > $filename
 				filename=lib${pkgtarget}.dirs
 					echo "usr/lib" > $filename
