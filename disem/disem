@@ -218,10 +218,6 @@ else
 		for target in $targets; do
 			format=`$DIR/disem-single-show ../project.xml target_format $target`
 			pkgtarget=`echo $target | sed s#_#-#g`
-#			if [ ${#pkgtarget} -lt 3 ]; then
-#				pkgtarget="${pkgtarget}-alt"
-#			fi
-
 			if [ "x$firsttarget" = "x" ]; then
 				firsttarget=$target
 			fi
@@ -382,9 +378,9 @@ else
 #				pkgtarget="${pkgtarget}-alt"
 #			fi
 			if [ "x$format" = "xshared library" ]; then
-				if [ "x$target" = "x$firsttarget" ]; then
-					ln -s tmp lib$pkgtarget
-				fi
+				#if [ "x$target" = "x$firsttarget" ]; then
+				#	ln -s tmp lib$pkgtarget
+				#fi
 				#files to -dev
 				echo "	cp debian/Find${pkgtarget}.cmake debian/lib${pkgtarget}-dev/usr/share/mmmake/cmakemodules/" >> $filename
 				echo "	cp debian/use_${pkgtarget}.cmake debian/lib${pkgtarget}-dev/usr/share/mmmake/templates/" >> $filename
@@ -407,9 +403,9 @@ else
 			fi
 			if [ "x$format" = "xexecutable" ]; then
 				if [ "x${target:0:4}" != "xtest" ]; then
-					if [ "x$target" = "x$firsttarget" ]; then
-						ln -s tmp $pkgtarget
-					fi
+					#if [ "x$target" = "x$firsttarget" ]; then
+					#	ln -s tmp $pkgtarget
+					#fi
 					#files to tmp
 					echo "	cp builddir/sandbox/${target} debian/${pkgtarget}/usr/bin" >> $filename
 					if [ -d ../share/${target} ]; then
