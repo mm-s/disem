@@ -63,7 +63,7 @@ if [ "_$rev" == "_-b" ]; then
 	shift
 	bn=$2
 	shift
-	branchl="-b $bn"
+	branchl="$bn"
 fi
 
 template_name=$3
@@ -115,7 +115,7 @@ if [ $isgit -eq 1 ]; then
   cd out/src
   if [ "_$branchl" != "_" ]; then
 	echo "switching to branch $branchl"
-	git checkout $branchl
+	git checkout -b $branchl origin/$branchl
   fi
   rev=`git --no-pager log --oneline --all --decorate  $(git reflog | awk '{print $1}') -- $prj | wc -l`
 #  rev=`git --no-pager log --pretty="%h" | wc -l`
