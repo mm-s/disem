@@ -57,6 +57,15 @@ fi
 url0=$1
 url=""
 rev=$2
+
+branchl=""
+if [ "_$rev" == "_-b" ]; then
+	shift
+	bn=$2
+	shift
+	branchl="-b $bn"
+fi
+
 template_name=$3
 
 isgit=0
@@ -64,10 +73,19 @@ if [[ $url0 == *".git"* ]]; then
   url=`echo $url0 | sed "s#\(.*\.git\)/*\(.*\)#\1#"`
   prj=`echo $url0 | sed "s#\(.*\.git\)/*\(.*\)#\2#"`
   isgit=1
+  gv=`git --version`
+  if [ ! $? -eq 0 ]; then
+	echo "git is required"
+	exit 1
+  fi
 else
   url=$url0
+  sv=`svn --version`
+  if [ ! $? -eq 0 ]; then
+	echo "svn is required"
+	exit 1
+  fi
 fi
-
 
 if [ -n $template_name ]; then
 	template_name=default
@@ -95,6 +113,10 @@ if [ $isgit -eq 1 ]; then
 #  git clone -b master --single-branch $url out/src
   git clone $url out/src
   cd out/src
+  if [ "_$branchl" != "_" ]; then
+	echo "switching to branch $branchl"
+	git checkout $branchl
+  fi
   rev=`git --no-pager log --oneline --all --decorate  $(git reflog | awk '{print $1}') -- $prj | wc -l`
 #  rev=`git --no-pager log --pretty="%h" | wc -l`
 #  exit
