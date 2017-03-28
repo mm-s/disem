@@ -241,7 +241,7 @@ else
 		for target in $targets; do
 			format=`$DIR/disem-single-show ../project.xml target_format $target`
 			flags=`$DIR/disem-single-show ../project.xml flags $target`
-echo "TARGET $target FLAGS $flags"
+#echo "TARGET $target FLAGS $flags"
 			pkgtarget=`echo $target | sed s#_#-#g`
 			if [ "x$firsttarget" = "x" ]; then
 				firsttarget=$target
@@ -264,6 +264,7 @@ echo "TARGET $target FLAGS $flags"
 				if [[ $flags == *"nodev"* ]]; then
 					echo "skipping development package"
 				else
+					echo "writting development package"
 					#development package 
 					echo "Package: lib${pkgtarget}-dev" >> $filename
 					echo "Architecture: any" >> $filename
@@ -618,7 +619,7 @@ for target in $targets; do
 done
 
 #patch files
-ls -la disem
+#ls -la disem
 if [ -d disem/patch ]; then
 	echo "patching files in `pwd`/disem/patch"
 	files=`find -L disem/patch -type f -name "*"`
