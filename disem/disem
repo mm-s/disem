@@ -184,6 +184,7 @@ if [ -d debian ]; then
    echo " -- $maintainer_email <$maintainer_email>  $datestamp" >> debian/changelog
    echo "" >> debian/changelog
 else
+   echo "generating debian dir"
 	if [ -f project.xml ]; then
 	   debian_template_dir=$DISEM_PREFIX/debian
 	   here=`pwd`
@@ -194,7 +195,7 @@ else
 
 	   #write control file 
 	   filename=control
-		#source package 
+		#source package   ##BUILD-DEPENDS
 		targets=`$DIR/disem-single-show ../project.xml targets`
 		title=`$DIR/disem-single-show ../project.xml title`
 		echo "Source: $pkgname" > $filename
@@ -202,8 +203,8 @@ else
 		echo "Priority: extra" >> $filename
 		echo "Maintainer: $maintainer_name <$maintainer_email>" >> $filename
 		echo -n "Build-depends: debhelper (>= 7), mmmake" >> $filename
-#		if [ -d ../java/$target ]; then
-#			echo -n ",ant" >> $filename
+#		if [ -d ../java ]; then
+#			echo -n ", ant" >> $filename
 #		fi
 		for target in $targets; do
 			if [ "x${target:0:4}" != "xtest" ]; then
@@ -221,12 +222,12 @@ else
 #							pkgtgtdep="${pkgtgtdep}-alt"
 #						fi
 						echo -n ", lib$pkgtgtdep-dev" >> $filename
-						if [ -d ../java/$target ]; then
-						  echo -n ",ant , lib$pkgtgtdep-java" >> $filename
-						fi
-						if [ -d ../php/$target ]; then
-						  echo -n ", lib$pkgtgtdep-php" >> $filename
-						fi
+						#if [ -d ../java/$target ]; then
+						#  echo -n ", lib$pkgtgtdep-java" >> $filename
+						#fi
+						#if [ -d ../php/$target ]; then
+						#  echo -n ", lib$pkgtgtdep-php" >> $filename
+						#fi
 					fi
 				done 
 			fi
@@ -239,6 +240,8 @@ else
 		firsttarget=""
 		for target in $targets; do
 			format=`$DIR/disem-single-show ../project.xml target_format $target`
+			flags=`$DIR/disem-single-show ../project.xml flags $target`
+echo "TARGET $target FLAGS $flags"
 			pkgtarget=`echo $target | sed s#_#-#g`
 			if [ "x$firsttarget" = "x" ]; then
 				firsttarget=$target
@@ -258,19 +261,24 @@ else
 				echo "Description: $title" >> $filename
 				echo " $title" >> $filename
 				echo "" >> $filename
-				#development package 
-				echo "Package: lib${pkgtarget}-dev" >> $filename
-				echo "Architecture: any" >> $filename
-				echo -n "Depends: \${shlibs:Depends}, \${misc:Depends}, lib${pkgtarget}, mmmake" >> $filename
-				for tgtdep in $tgtdeps; do
-					pkgtgtdep=`echo $tgtdep | sed s#_#-#g`
-					echo -n ", lib$pkgtgtdep-dev" >> $filename
-				done 
-				echo "" >> $filename
-				echo "Description: $title - Development libraries" >> $filename
-				echo " $title - Development libraries" >> $filename
-				echo "" >> $filename
+				if [[ $flags == *"nodev"* ]]; then
+					echo "skipping development package"
+				else
+					#development package 
+					echo "Package: lib${pkgtarget}-dev" >> $filename
+					echo "Architecture: any" >> $filename
+					echo -n "Depends: \${shlibs:Depends}, \${misc:Depends}, lib${pkgtarget}, mmmake" >> $filename
+					for tgtdep in $tgtdeps; do
+						pkgtgtdep=`echo $tgtdep | sed s#_#-#g`
+						echo -n ", lib$pkgtgtdep-dev" >> $filename
+					done 
+					echo "" >> $filename
+					echo "Description: $title - Development libraries" >> $filename
+					echo " $title - Development libraries" >> $filename
+					echo "" >> $filename
+				fi
 				#java package 
+if [ 0 -eq 1 ]; then
 				if [ -d ../java/$target ]; then
 					echo "Package: lib${pkgtarget}-java" >> $filename
 					echo "Architecture: all" >> $filename
@@ -300,6 +308,7 @@ else
 					echo " $title" >> $filename
 					echo "" >> $filename
 				fi
+fi
 			fi
 			if [ "x$format" = "xexecutable" ]; then
 				if [ "x${target:0:4}" != "xtest" ]; then
@@ -363,9 +372,11 @@ else
 			else
 				echo "	cd builddir && make $target -j\${MAKE_JOBS}" >> $filename
 			fi
+if [ 0 -eq 1 ]; then
 			if [ -d ../java/$target ]; then
 				echo "	cd java && ant $target" >> $filename
 			fi
+fi
 
 		done
 		echo "	touch \$@" >> $filename
@@ -410,6 +421,7 @@ else
 				echo "	cp ${target}/include/* debian/lib${pkgtarget}-dev/usr/include/${target} -R" >> $filename
 				#files to tmp
 				echo "	cp builddir/sandbox/lib${target}.so debian/lib${pkgtarget}/usr/lib" >> $filename
+if [ 0 -eq 1 ]; then
 				if [ -d ../java/$target ]; then
 					echo "	mkdir -p debian/lib${pkgtarget}-java/usr/share/java" >> $filename
 					echo "	cp java/${target}.jar debian/lib${pkgtarget}-java/usr/share/java/lib${pkgtarget}.jar" >> $filename
@@ -418,6 +430,7 @@ else
 					echo "	mkdir -p debian/lib${pkgtarget}-php/usr/share/php/${pkgtarget}" >> $filename
 					echo "	cp php/${target}/*.inc debian/lib${pkgtarget}-php/usr/share/php/${pkgtarget}/ -R" >> $filename
 				fi
+fi
 				if [ -d ../share/${target} ]; then
 					echo "  touch share/${target}/_hook_"
 					echo "	cp share/${target}/* debian/lib${pkgtarget}/usr/share/${target}/ -R" >> $filename

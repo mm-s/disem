@@ -14,6 +14,7 @@ function usage {
   echo "  title    :show project title"
   echo "  deps <target>   :show first level dependencies"
   echo "  tdeps <target>   :show first level dependencies (only targets)"
+  echo "  flags <target>   :show content of flags attribute (only targets)"
   echo "  target_title  <target>  :show target title"
   echo "  targets    :show targets of the project"
   echo "  shared_libraries    :show shared_libray targets"
@@ -23,7 +24,6 @@ function usage {
   echo "  version_minor <target>   :show minor version number"
   echo "  version <target>   :show major.minor version number"
   echo ""
-  echo "send greeting cards to:"
   echo "  Marcos Mayorga - mm@mm-studios.com"
   echo "  2009-1017"
 }
@@ -148,6 +148,11 @@ if [ "x${command}" = "xtdeps" ]; then
 	for res in $ress; do
 		echo `echo $res | sed "s#.*->\(.*\)#\1#"`
 	done
+	exit 0
+fi
+if [ "x${command}" = "xflags" ]; then
+	tf_tgt=$3
+	xsltproc --stringparam tgt $tf_tgt $xsltdir/flags.xsl $prjxmlfile
 	exit 0
 fi
 
