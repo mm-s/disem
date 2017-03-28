@@ -241,7 +241,6 @@ else
 		for target in $targets; do
 			format=`$DIR/disem-single-show ../project.xml target_format $target`
 			flags=`$DIR/disem-single-show ../project.xml flags $target`
-#echo "TARGET $target FLAGS $flags"
 			pkgtarget=`echo $target | sed s#_#-#g`
 			if [ "x$firsttarget" = "x" ]; then
 				firsttarget=$target
@@ -407,6 +406,7 @@ fi
 #		done
 		for target in $targets; do
 			format=`$DIR/disem-single-show ../project.xml target_format $target`
+			flags=`$DIR/disem-single-show ../project.xml flags $target`
 			pkgtarget=`echo $target | sed s#_#-#g`
 #			if [ ${#pkgtarget} -lt 3 ]; then
 #				pkgtarget="${pkgtarget}-alt"
@@ -416,12 +416,16 @@ fi
 				#	ln -s tmp lib$pkgtarget
 				#fi
 				#files to -dev
-				echo "	cp debian/Find${pkgtarget}.cmake debian/lib${pkgtarget}-dev/usr/share/mmmake/cmakemodules/" >> $filename
-				echo "	cp debian/use_${pkgtarget}.cmake debian/lib${pkgtarget}-dev/usr/share/mmmake/templates/" >> $filename
-				echo "	cp debian/link_${pkgtarget}.cmake debian/lib${pkgtarget}-dev/usr/share/mmmake/templates/" >> $filename
-				echo "	cp ${target}/include/* debian/lib${pkgtarget}-dev/usr/include/${target} -R" >> $filename
 				#files to tmp
 				echo "	cp builddir/sandbox/lib${target}.so debian/lib${pkgtarget}/usr/lib" >> $filename
+				if [[ $flags == *"nodev"* ]]; then
+					echo " no dev package stuff"
+				else
+					echo "	cp debian/Find${pkgtarget}.cmake debian/lib${pkgtarget}-dev/usr/share/mmmake/cmakemodules/" >> $filename
+					echo "	cp debian/use_${pkgtarget}.cmake debian/lib${pkgtarget}-dev/usr/share/mmmake/templates/" >> $filename
+					echo "	cp debian/link_${pkgtarget}.cmake debian/lib${pkgtarget}-dev/usr/share/mmmake/templates/" >> $filename
+					echo "	cp ${target}/include/* debian/lib${pkgtarget}-dev/usr/include/${target} -R" >> $filename
+				fi
 if [ 0 -eq 1 ]; then
 				if [ -d ../java/$target ]; then
 					echo "	mkdir -p debian/lib${pkgtarget}-java/usr/share/java" >> $filename
@@ -496,6 +500,7 @@ fi
 				ln -s $target.dirs dirs
 			fi
 			format=`$DIR/disem-single-show ../project.xml target_format $target`
+			flags=`$DIR/disem-single-show ../project.xml flags $target`
 			pkgtarget=`echo $target | sed s#_#-#g`
 #			if [ ${#pkgtarget} -lt 3 ]; then
 #				pkgtarget="${pkgtarget}-alt"
@@ -550,11 +555,15 @@ fi
 					if [ -d ../share/$pkgtarget ]; then
 						echo "usr/share/$pkgtarget" >> $filename
 					fi
-				filename=lib${pkgtarget}-dev.dirs
+				if [[ $flags == *"nodev"* ]]; then
+					echo " no dev package stuff"
+				else
+					filename=lib${pkgtarget}-dev.dirs
 					echo "usr/include/$target" > $filename
 					echo "usr/lib" >> $filename
 					echo "usr/share/mmmake/cmakemodules" >> $filename
 					echo "usr/share/mmmake/templates" >> $filename
+				fi
 			fi
 			if [ "x$format" = "xexecutable" ]; then
 				if [ "x${target:0:4}" = "xtest" ]; then
