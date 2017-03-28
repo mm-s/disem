@@ -202,9 +202,9 @@ else
 		echo "Priority: extra" >> $filename
 		echo "Maintainer: $maintainer_name <$maintainer_email>" >> $filename
 		echo -n "Build-depends: debhelper (>= 7), mmmake" >> $filename
-		if [ -d ../java/$target ]; then
-			echo -n ",ant" >> $filename
-		fi
+#		if [ -d ../java/$target ]; then
+#			echo -n ",ant" >> $filename
+#		fi
 		for target in $targets; do
 			if [ "x${target:0:4}" != "xtest" ]; then
 				pkgtarget=`echo $target | sed s#_#-#g`
@@ -222,7 +222,7 @@ else
 #						fi
 						echo -n ", lib$pkgtgtdep-dev" >> $filename
 						if [ -d ../java/$target ]; then
-						  echo -n ", lib$pkgtgtdep-java" >> $filename
+						  echo -n ",ant , lib$pkgtgtdep-java" >> $filename
 						fi
 						if [ -d ../php/$target ]; then
 						  echo -n ", lib$pkgtgtdep-php" >> $filename
