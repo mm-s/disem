@@ -734,7 +734,11 @@ else
 	rm out/xsl
 fi
 
-rm -rf out/$dest/disem
+if [ -d out/$dest/disem ]; then
+	if [ ! -f out/$dest/disem/disem-single-show ]; then  #we're not diseming disem
+		rm -rf out/$dest/disem
+	fi
+fi
 
 mv out/$dest out/$pkgname-$major.$minor.$rev
 echo "exported in:"
