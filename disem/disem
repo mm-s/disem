@@ -639,6 +639,7 @@ fi
 
 if [ -d disem/template ]; then
 	template_dir=`pwd`"/disem/template"
+	echo "templatedir=$template_dir"
 fi
 
 for file in $files; do
