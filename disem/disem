@@ -637,6 +637,10 @@ else
 	files=`find . -type f -name "*" | grep -v "\.git/"`
 fi
 
+if [ -d disem/template ]; then
+	template_dir=`pwd`"/disem/template"
+fi
+
 for file in $files; do
 	ext=`echo $file | sed "s/.*\.\(.*\)/\1/"`
 	if [ "x$file" = "x$ext" ]; then
@@ -729,6 +733,7 @@ else
 	rm out/xsl
 fi
 
+rm -rf out/$dest/disem
 
 mv out/$dest out/$pkgname-$major.$minor.$rev
 echo "exported in:"
