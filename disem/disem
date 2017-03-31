@@ -109,6 +109,9 @@ mkdir out
 
 lpwd=`pwd`
 
+hash=""
+branch=""
+
 if [ $isgit -eq 1 ]; then
 #  git clone -b master --single-branch $url out/src
   git clone $url out/src
@@ -122,6 +125,8 @@ if [ $isgit -eq 1 ]; then
 	git checkout -b $branchl origin/$branchl
   fi
   rev=`git --no-pager log --oneline --all --decorate  $(git reflog | awk '{print $1}') -- $prj | wc -l`
+  hash=`git log --pretty="%H " -1`
+  branch=`git branch | grep "^\*" | sed "s#^* \(.*\)#\1#"`
 #  rev=`git --no-pager log --pretty="%h" | wc -l`
 #  exit
 #  rm .git -r
@@ -181,6 +186,8 @@ echo "pkgname: $pkgname"
 echo "major: $major"
 echo "minor: $minor"
 echo "rev: $rev"
+echo "hash: $hash"
+echo "branch: $branch"
 
 if [ -d debian ]; then
    datestamp=`date -R`
@@ -606,6 +613,8 @@ for target in $targets; do
 		echo "extern const int rev;" >> $file
 		echo "extern const std::string version;" >> $file
 		echo "extern const std::string date;" >> $file
+		echo "extern const std::string hash;" >> $file
+		echo "extern const std::string branch;" >> $file
 		echo "}" >> $file
 		echo "}" >> $file
 		echo "#endif" >> $file
@@ -622,6 +631,8 @@ for target in $targets; do
 		echo "const int rev=$rev;" >> $file
 		echo "const std::string version=\"$major.$minor.$rev\";" >> $file
 		echo "const std::string date=\"`date`\";" >> $file
+		echo "const std::string hash=\"$hash\";" >> $file
+		echo "const std::string branch=\"$branch\";" >> $file
 		echo "}}" >> $file
 
 	done
