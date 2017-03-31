@@ -725,9 +725,9 @@ cd $lpwd
 
 if [ $isgit -eq 1 ]; then
 	if [ -d out/src ]; then
-		rm -r out/src/.git
+		rm -rf out/src/.git
 	else
-		rm -r out/$dest/.git
+		rm -rf out/$dest/.git
 	fi
 else
 	rm out/svninfo.xml
