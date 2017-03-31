@@ -112,6 +112,10 @@ lpwd=`pwd`
 if [ $isgit -eq 1 ]; then
 #  git clone -b master --single-branch $url out/src
   git clone $url out/src
+  if [ ! $? -eq 0 ]; then
+	echo "errors."
+	exit 1
+  fi
   cd out/src
   if [ "_$branchl" != "_" ]; then
 	echo "switching to branch $branchl"
@@ -124,6 +128,10 @@ if [ $isgit -eq 1 ]; then
   cd $lpwd
 else
   svn info --xml -r $rev $url > out/svninfo.xml
+  if [ ! $? -eq 0 ]; then
+	echo "errors."
+	exit 1
+  fi
   xsl='<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"><xsl:output method="text"/><xsl:template match="*"><xsl:apply-templates/></xsl:template><xsl:template match="text()"/><xsl:template match="commit"><xsl:value-of select="@revision"/></xsl:template></xsl:stylesheet>'
   echo $xsl > out/xsl
   rev=`xsltproc out/xsl out/svninfo.xml`
