@@ -648,8 +648,10 @@ for target in $targets; do
 	done
 done
 
+
 #patch files
 #ls -la disem
+
 if [ -d disem/patch ]; then
 	echo "patching files in `pwd`/disem/patch"
 	files=`find -L disem/patch -type f -name "*"`
@@ -658,12 +660,17 @@ else
 	files=`find . -type f -name "*" | grep -v "\.git/"`
 fi
 
+
 if [ -d disem/template ]; then
 	template_dir=`pwd`"/disem/template"
 	echo "templatedir=$template_dir"
+else
+	echo "specific template not available at `pwd`/disem/template"
 fi
 
+
 for file in $files; do
+echo "Processing file $file"
 	ext=`echo $file | sed "s/.*\.\(.*\)/\1/"`
 	if [ "x$file" = "x$ext" ]; then
 	  ext=""
@@ -673,17 +680,20 @@ for file in $files; do
 	if [ ! -f $template_file ]; then
 		echo "template file not found for $file"
 		if [ -d $template_dir/file_patterns ]; then
-			filereports=`file $file`
+			filereports=`file out/$dest/$file | tr " " "_"`
 			fo=""
 			echo "file reports: $filereports"
-			for f2 in `find $template_dir/file_patterns -type f`; do
+			find -L $template_dir/file_patterns -type f > /tmp/disemout55
+			while read f2; do
 				echo "   checking $f2"
-				if [[ $filereports == *"$f2"* ]]; then
+				f3=$(basename $f2)
+				if [[ $filereports == *"$f3"* ]]; then
 				  fo="x";
-				  $template_file=$f2
+				  template_file=$f2
 				  break;
 				fi
-			done
+			done < /tmp/disemout55
+
 			if [ "_$fo" == "_" ]; then
 				cd out/$dest
 				continue
@@ -693,6 +703,7 @@ for file in $files; do
 			continue
 		fi
 	fi
+
 	if [ $isgit -eq 1 ]; then
 		cd out/$dest
 		author=`git log --pretty="%an %ae - %cn %ce" -1 -- $file`
@@ -702,7 +713,6 @@ for file in $files; do
 	else
 		filend=`echo $file | sed "s/\.\/\(.*\)/\1/"`
 		fileurl=$url/$filend
-
 		svn info --xml -r $rev $fileurl > out/svninfo.xml
 		xsl="<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\"><xsl:output method=\"text\"/><xsl:template match=\"text()\"/><xsl:template match=\"author\"><xsl:value-of select=\".\"/></xsl:template></xsl:stylesheet>"
 		echo $xsl > out/xsl
@@ -716,30 +726,38 @@ for file in $files; do
 	fi
         echo "using $template_file to patch $file"
 	# replace tokens
-	head -n1 | grep "^#!"
+	head -n1 out/$dest/$file | grep "^#!"
 	bangshe=$?
 	if [ $bangshe -eq 0 ]; then
-		head -n 1 out/$dest/$file > out/$dest/${file}_disem34214523
-		cat $template_file >> out/$dest/${file}_disem34214523
-		tail -n +2 out/$dest/$file >> out/$dest/${file}_disem34214523
+		echo "has got bangshe"
+		head -n 1 out/$dest/$file > out/tmp
+		cat $template_file >> out/tmp
+		tail -n +2 out/$dest/$file > out/$dest/${file}_disem34214523
 		rm out/$dest/$file
 	else
-		mv out/$dest/$file out/$dest/${file}_disem34214523
-		cp $template_file out/tmp
+		begin=`cat out/$dest/$file | nl -b a | grep "[ \t]*<?xml[ \t]*version"`
+		if [ $? -eq 0 ]; then
+			echo "has xml decl"
+			cat out/$dest/$file | grep "<?xml" > out/tmp
+			cat $template_file >> out/tmp
+			cat out/$dest/$file | grep -v "<?xml" > out/$dest/${file}_disem34214523
+			rm out/$dest/$file
+		else
+			mv out/$dest/$file out/$dest/${file}_disem34214523
+			cp $template_file out/tmp
+		fi
 	fi
-
 
 	cat out/tmp | sed "s/\[disem\:AUTHOR\]/$author/" > out/tmp2; cp out/tmp2 out/tmp
 	cat out/tmp | sed "s/\[disem\:REVDATE\]/$revdate/" > out/tmp2; cp out/tmp2 out/tmp
 	cat out/tmp | sed "s/\[disem\:REV\]/$revnumber/" > out/tmp2; cp out/tmp2 out/tmp
-	#
-	
+
 	mv out/tmp out/$dest/$file
 	cat out/$dest/${file}_disem34214523 >> out/$dest/$file
 	rm out/$dest/${file}_disem34214523
-	
+
 	echo "patched file: $file"
-	
+
 	cd out/$dest
 done
 
