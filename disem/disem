@@ -671,10 +671,13 @@ for file in $files; do
 	cd $lpwd
 	template_file=$template_dir/$ext
 	if [ ! -f $template_file ]; then
+		echo "template file not found for $file"
 		if [ -d $template_dir/file_patterns ]; then
 			filereports=`file $file`
 			fo=""
+			echo "file reports: $filereports"
 			for f2 in `find $template_dir/file_patterns -type f`; do
+				echo "   checking $f2"
 				if [[ $filereports == *"$f2"* ]]; then
 				  fo="x";
 				  $template_file=$f2
@@ -711,9 +714,20 @@ for file in $files; do
 		echo $xsl > out/xsl
 		revnumber=`xsltproc out/xsl out/svninfo.xml`
 	fi
+        echo "using $template_file to patch $file"
 	# replace tokens
-	mv out/$dest/$file out/$dest/${file}_disem34214523
-	cp $template_file out/tmp
+	head -n1 | grep "^#!"
+	bangshe=$?
+	if [ $bangshe -eq 0 ]; then
+		head -n 1 out/$dest/$file > out/$dest/${file}_disem34214523
+		cat $template_file >> out/$dest/${file}_disem34214523
+		tail -n +2 out/$dest/$file >> out/$dest/${file}_disem34214523
+		rm out/$dest/$file
+	else
+		mv out/$dest/$file out/$dest/${file}_disem34214523
+		cp $template_file out/tmp
+	fi
+
 
 	cat out/tmp | sed "s/\[disem\:AUTHOR\]/$author/" > out/tmp2; cp out/tmp2 out/tmp
 	cat out/tmp | sed "s/\[disem\:REVDATE\]/$revdate/" > out/tmp2; cp out/tmp2 out/tmp
