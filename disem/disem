@@ -671,8 +671,24 @@ for file in $files; do
 	cd $lpwd
 	template_file=$template_dir/$ext
 	if [ ! -f $template_file ]; then
-		cd out/$dest
-		continue
+		if [ -d $template_dir/file_patterns ]; then
+			filereports=`file $file`
+			fo=""
+			for f2 in `find $template_dir/file_patterns -type f`; do
+				if [[ $filereports == *"$f2"* ]]; then
+				  fo="x";
+				  $template_file=$f2
+				  break;
+				fi
+			done
+			if [ "_$fo" == "_" ]; then
+				cd out/$dest
+				continue
+			fi
+		else
+			cd out/$dest
+			continue
+		fi
 	fi
 	if [ $isgit -eq 1 ]; then
 		cd out/$dest
