@@ -58,6 +58,8 @@ url0=$1
 url=""
 rev=$2
 
+reldate=`date`
+
 branchl=""
 if [ "_$rev" == "_-b" ]; then
 	shift
@@ -630,7 +632,7 @@ for target in $targets; do
 		echo "const int minor=$minor;" >> $file
 		echo "const int rev=$rev;" >> $file
 		echo "const std::string version=\"$major.$minor.$rev\";" >> $file
-		echo "const std::string date=\"`date`\";" >> $file
+		echo "const std::string date=\"$reldate\";" >> $file
 		echo "const std::string hash=\"$hash\";" >> $file
 		echo "const std::string branch=\"$branch\";" >> $file
 		echo "}}" >> $file
@@ -758,6 +760,16 @@ if [ -d out/$dest/disem ]; then
 		rm -rf out/$dest/disem
 	fi
 fi
+
+file="out/$dest/disem_info"
+echo "major $major" > $file
+echo "minor $minor" >> $file
+echo "rev $rev" >> $file
+echo "version $major.$minor.$rev" >> $file
+echo "date $reldate" >> $file
+echo "hash $hash" >> $file
+echo "branch $branch" >> $file
+
 
 mv out/$dest out/$pkgname-$major.$minor.$rev
 echo "exported in:"
